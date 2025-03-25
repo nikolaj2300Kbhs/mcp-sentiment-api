@@ -9,8 +9,8 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize OpenAI client with http_client=None to avoid proxies error
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'), http_client=None)
 
 def classify_sentiment(review_text):
     """
@@ -30,7 +30,7 @@ def classify_sentiment(review_text):
         
         # Make API call to OpenAI
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",  # Updated to gpt-4o for consistency with your setup
             messages=[
                 {"role": "system", "content": "You are a sentiment analysis expert. Respond with only 'positive' or 'negative'."},
                 {"role": "user", "content": prompt}
@@ -51,7 +51,7 @@ def classify_sentiment(review_text):
     except Exception as e:
         raise Exception(f"Error in sentiment classification: {str(e)}")
 
-@app.route('/classify', methods=['POST'])
+@app.route('/sentiment', methods=['POST'])  # Changed from /classify to match Postman test
 def classify_review():
     """
     Endpoint to classify the sentiment of a review.
@@ -106,5 +106,5 @@ if __name__ == '__main__':
     if not os.getenv('OPENAI_API_KEY'):
         raise ValueError("OPENAI_API_KEY environment variable is not set")
     
-    # Modify this to bind to the PORT environment variable for deployment
+    # Bind to the PORT environment variable for deployment
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
