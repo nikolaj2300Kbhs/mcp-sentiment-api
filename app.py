@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=os.getenv('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'))
 
 def classify_sentiment(review_text):
     """
