@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Initialize OpenAI client with http_client=None to avoid proxies error
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'), http_client=None)
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def classify_sentiment(review_text):
     """
