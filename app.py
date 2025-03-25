@@ -105,5 +105,6 @@ if __name__ == '__main__':
     # Check for required environment variables
     if not os.getenv('OPENAI_API_KEY'):
         raise ValueError("OPENAI_API_KEY environment variable is not set")
-        
-    app.run(debug=True)
+    
+    # Modify this to bind to the PORT environment variable for deployment
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
