@@ -12,39 +12,23 @@ app = Flask(__name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-def classify_sentiment(review_text):
-    """Classify sentiment of a single review."""
+def predict_box_score(reviews, box_info, historical_data):
+    """Predict a 1–10 satisfaction score with detailed inputs."""
     try:
-        prompt = f"""Classify the sentiment of the following review as 'positive' or 'negative'.
-        Review: {review_text}
-        Sentiment:"""
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a sentiment analysis expert. Respond with only 'positive' or 'negative'."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=10
-        )
-        sentiment = response.choices[0].message.content.strip().lower()
-        if sentiment not in ['positive', 'negative']:
-            raise ValueError("Invalid sentiment classification")
-        return sentiment
-    except Exception as e:
-        raise Exception(f"Error in sentiment classification: {str(e)}")
-
-def predict_box_score(reviews, box_info):
-    """Predict a 1–10 satisfaction score for a box based on reviews and box info."""
-    try:
-        prompt = f"""Predict a satisfaction score (1–10) for a Goodiebox subscription box based on these inputs:
-        Reviews: {', '.join(reviews)}
+        prompt = f"""Predict a satisfaction score (1–10) for a Goodiebox subscription box based on:
+        Reviews: {', '.join(reviews) if reviews else 'No reviews provided'}
         Box Info: {box_info}
-        Consider factors like sentiment, product variety, retail value, and surprise value. Return only a number (1–10)."""
+        Historical Data: {historical_data}
+        Evaluate based on:
+        - Sentiment from reviews (40% weight): Positive/negative tone.
+        - Product variety (30% weight): Number of products, unique categories.
+        - Retail value and surprise (20% weight): Total value, full-size/premium items.
+        - Historical trends (10% weight): Past scores/reactions.
+        Return only a number (1–10)."""
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a Goodiebox satisfaction expert."},
+                {"role": "system", "content": "You’re a Goodiebox satisfaction expert with deep knowledge of beauty box trends."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.5,
@@ -57,33 +41,17 @@ def predict_box_score(reviews, box_info):
     except Exception as e:
         raise Exception(f"Error in box score prediction: {str(e)}")
 
-@app.route('/sentiment', methods=['POST'])
-def classify_review():
-    """Existing endpoint for sentiment classification."""
-    try:
-        data = request.get_json()
-        if not data or 'review' not in data:
-            return jsonify({'error': 'Missing review text'}), 400
-        review_text = data['review']
-        if not isinstance(review_text, str) or not review_text.strip():
-            return jsonify({'error': 'Invalid review text'}), 400
-        sentiment = classify_sentiment(review_text)
-        return jsonify({'review': review_text, 'sentiment': sentiment})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/predict_box_score', methods=['POST'])
 def box_score():
-    """New endpoint to predict box satisfaction score."""
+    """Endpoint for box score prediction."""
     try:
         data = request.get_json()
-        if not data or 'reviews' not in data:
-            return jsonify({'error': 'Missing reviews'}), 400
-        reviews = data['reviews']
+        if not data:
+            return jsonify({'error': 'Missing data'}), 400
+        reviews = data.get('reviews', [])
         box_info = data.get('box_info', 'No additional info provided')
-        if not isinstance(reviews, list) or not all(isinstance(r, str) for r in reviews):
-            return jsonify({'error': 'Reviews must be a list of strings'}), 400
-        score = predict_box_score(reviews, box_info)
+        historical_data = data.get('historical_data', 'No historical data provided')
+        score = predict_box_score(reviews, box_info, historical_data)
         return jsonify({'predicted_box_score': score})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
