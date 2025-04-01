@@ -12,23 +12,17 @@ app = Flask(__name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-def predict_box_score(reviews, box_info, historical_data):
-    """Predict a 1–10 satisfaction score with detailed inputs."""
+def predict_box_score(historical_data, future_box_info):
+    """Simulate a 1–10 satisfaction score for a future box using historical data."""
     try:
-        prompt = f"""Predict a satisfaction score (1–10) for a Goodiebox subscription box based on:
-        Reviews: {', '.join(reviews) if reviews else 'No reviews provided'}
-        Box Info: {box_info}
-        Historical Data: {historical_data}
-        Evaluate based on:
-        - Sentiment from reviews (40% weight): Positive/negative tone.
-        - Product variety (30% weight): Number of products, unique categories.
-        - Retail value and surprise (20% weight): Total value, full-size/premium items.
-        - Historical trends (10% weight): Past scores/reactions.
-        Return only a number (1–10)."""
+        prompt = f"""You are a Goodiebox satisfaction expert with access to historical data on past boxes. Simulate a satisfaction score (1–10) for a future subscription box based on:
+        Historical Data (past boxes): {historical_data}
+        Future Box Info: {future_box_info}
+        Analyze trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Simulate how members might react to this future box based on these patterns. Return only a number (1–10)."""
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You’re a Goodiebox satisfaction expert with deep knowledge of beauty box trends."},
+                {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.5,
@@ -39,19 +33,18 @@ def predict_box_score(reviews, box_info, historical_data):
             raise ValueError("Invalid score received")
         return score
     except Exception as e:
-        raise Exception(f"Error in box score prediction: {str(e)}")
+        raise Exception(f"Error in box score simulation: {str(e)}")
 
 @app.route('/predict_box_score', methods=['POST'])
 def box_score():
-    """Endpoint for box score prediction."""
+    """Endpoint for simulating future box scores."""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({'error': 'Missing data'}), 400
-        reviews = data.get('reviews', [])
-        box_info = data.get('box_info', 'No additional info provided')
+        if not data or 'future_box_info' not in data:
+            return jsonify({'error': 'Missing future box info'}), 400
         historical_data = data.get('historical_data', 'No historical data provided')
-        score = predict_box_score(reviews, box_info, historical_data)
+        future_box_info = data['future_box_info']
+        score = predict_box_score(historical_data, future_box_info)
         return jsonify({'predicted_box_score': score})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
