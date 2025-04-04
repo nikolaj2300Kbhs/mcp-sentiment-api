@@ -13,9 +13,9 @@ app = Flask(__name__)
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def predict_box_score(historical_data, future_box_info):
-    """Simulate a 1–10 satisfaction score for a future box using historical data."""
+    """Simulate a 1–5 satisfaction score (with two decimal places) for a future box using historical data."""
     try:
-        prompt = f"""You are a Goodiebox satisfaction expert simulating a member satisfaction score (1–10) for a future subscription box. Use this data context:
+        prompt = f"""You are a Goodiebox satisfaction expert simulating a member satisfaction score for a future subscription box. Use this data context:
 
         **Data Explanation**:
         - Historical Data: Past boxes with details like:
@@ -26,15 +26,14 @@ def predict_box_score(historical_data, future_box_info):
           - Full-size/Premium: Counts of full-size items and those >€20.
           - Total Weight: Sum of product weights in grams.
           - Avg Brand/Category Ratings: Average ratings (out of 5) for brands and categories.
-          - Historical Score: Past average box rating (out of 5).
-          - Past Predicted Score: Previous predictions (1–10).
+          - Historical Score: Past average box rating (out of 5, with two decimal places, e.g., 4.23).
         - Future Box Info: Details of a new box (same format, no historical score yet).
 
         **Inputs**:
         Historical Data (past boxes): {historical_data}
         Future Box Info: {future_box_info}
 
-        Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return only a number (1–10)."""
+        Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return a satisfaction score on a 1–5 scale (matching the historical scores), with exactly two decimal places (e.g., 4.23). Return only the numerical score (e.g., 4.23)."""
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -42,11 +41,17 @@ def predict_box_score(historical_data, future_box_info):
                 {"role": "user", "content": prompt}
             ],
             temperature=0.5,
-            max_tokens=5
+            max_tokens=10
         )
         score = response.choices[0].message.content.strip()
-        if not score.isdigit() or int(score) < 1 or int(score) > 10:
-            raise ValueError("Invalid score received")
+        try:
+            score_float = float(score)
+            if not (1 <= score_float <= 5):
+                raise ValueError("Score out of range")
+            # Ensure two decimal places
+            score = f"{score_float:.2f}"
+        except ValueError:
+            raise ValueError("Invalid score format received")
         return score
     except Exception as e:
         raise Exception(f"Error in box score simulation: {str(e)}")
