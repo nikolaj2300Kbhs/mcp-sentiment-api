@@ -15,10 +15,26 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def predict_box_score(historical_data, future_box_info):
     """Simulate a 1–10 satisfaction score for a future box using historical data."""
     try:
-        prompt = f"""You are a Goodiebox satisfaction expert with access to historical data on past boxes. Simulate a satisfaction score (1–10) for a future subscription box based on:
+        prompt = f"""You are a Goodiebox satisfaction expert simulating a member satisfaction score (1–10) for a future subscription box. Use this data context:
+
+        **Data Explanation**:
+        - Historical Data: Past boxes with details like:
+          - Box SKU: Unique box identifier (e.g., DK-2504-CLA-2L).
+          - Products: Number of items, listed as Product SKUs (e.g., SKU123).
+          - Total Retail Value: Sum of product retail prices in €.
+          - Unique Categories: Number of distinct product categories (e.g., skincare, makeup).
+          - Full-size/Premium: Counts of full-size items and those >€20.
+          - Total Weight: Sum of product weights in grams.
+          - Avg Brand/Category Ratings: Average ratings (out of 5) for brands and categories.
+          - Historical Score: Past average box rating (out of 5).
+          - Past Predicted Score: Previous predictions (1–10).
+        - Future Box Info: Details of a new box (same format, no historical score yet).
+
+        **Inputs**:
         Historical Data (past boxes): {historical_data}
         Future Box Info: {future_box_info}
-        Analyze trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Simulate how members might react to this future box based on these patterns. Return only a number (1–10)."""
+
+        Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return only a number (1–10)."""
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
