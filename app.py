@@ -39,29 +39,42 @@ def predict_box_score(historical_data, future_box_info):
         Future Box Info: {future_box_info}
 
         Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return a satisfaction score on a 1–5 scale (matching the historical scores), with exactly two decimal places (e.g., 4.23). Return only the numerical score (e.g., 4.23)."""
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.5,
-            max_tokens=50  # Increased from 10 to 50 for safety
-        )
-        score = response.choices[0].message.content.strip()
-        logger.info(f"Raw model response: '{score}'")
-        if not score:
-            logger.error("Model returned an empty response")
-            raise ValueError("Model returned an empty response")
-        try:
-            score_float = float(score)
-            if not (1 <= score_float <= 5):
-                raise ValueError("Score out of range")
-            score = f"{score_float:.2f}"
-        except ValueError as e:
-            logger.error(f"Invalid score format received: '{score}', error: {str(e)}")
-            raise ValueError(f"Invalid score format received: '{score}'")
-        return score
+        
+        scores = []
+        for _ in range(5):  # Run 5 times and average
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0,  # Deterministic output
+                max_tokens=50,
+                seed=42  # Fixed seed for reproducibility
+            )
+            score = response.choices[0].message.content.strip()
+            logger.info(f"Run response: '{score}'")
+            if not score:
+                logger.error("Model returned an empty response in one run")
+                raise ValueError("Model returned an empty response in one run")
+            try:
+                score_float = float(score)
+                if not (1 <= score_float <= 5):
+                    raise ValueError("Score out of range")
+                scores.append(score_float)
+            except ValueError as e:
+                logger.error(f"Invalid score format received in run: '{score}', error: {str(e)}")
+                raise ValueError(f"Invalid score format received in run: '{score}'")
+        
+        if not scores:
+            logger.error("No valid scores collected from runs")
+            raise ValueError("No valid scores collected from runs")
+        
+        # Calculate average score
+        avg_score = sum(scores) / len(scores)
+        final_score = f"{avg_score:.2f}"
+        logger.info(f"Averaged score from 5 runs: '{final_score}'")
+        return final_score
     except Exception as e:
         logger.error(f"Error in box score simulation: {str(e)}")
         raise Exception(f"Error in box score simulation: {str(e)}")
