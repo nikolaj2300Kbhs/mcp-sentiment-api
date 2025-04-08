@@ -20,47 +20,31 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def predict_box_score(historical_data, future_box_info):
     """Simulate a 1–5 satisfaction score (with two decimal places) for a future box using historical data."""
     try:
-        prompt = f"""You are a Goodiebox satisfaction expert simulating a member satisfaction score for a future subscription box. Use this data context:
-
-        **Data Explanation**:
-        - Historical Data: Past boxes with details like:
-          - Box SKU: Unique box identifier (e.g., DK-2504-CLA-2L).
-          - Products: Number of items, listed as Product SKUs (e.g., SKU123).
-          - Total Retail Value: Sum of product retail prices in €.
-          - Unique Categories: Number of distinct product categories (e.g., skincare, makeup).
-          - Full-size/Premium: Counts of full-size items and those >€20.
-          - Total Weight: Sum of product weights in grams.
-          - Avg Brand/Category Ratings: Average ratings (out of 5) for brands and categories.
-          - Historical Score: Past average box rating (out of 5, with two decimal places, e.g., 4.23).
-        - Future Box Info: Details of a new box (same format, no historical score yet).
-
-        **Inputs**:
-        Historical Data (past boxes): {historical_data}
+        prompt = f"""You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends. Using this data:
+        Historical Data: {historical_data}
         Future Box Info: {future_box_info}
-
-        Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return a satisfaction score on a 1–5 scale (matching the historical scores), with exactly two decimal places (e.g., 4.23). Return only the numerical score (e.g., 4.23)."""
+        Predict a satisfaction score (1–5) for the future box based on trends in past ratings, product variety, and value. Return the score as a number with two decimal places (e.g., 4.23), nothing else."""
+        
         response = client.chat.completions.create(
             model="o1-preview",
             messages=[
-                {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt}  # Only user role, system content merged into prompt
             ],
             temperature=0.5,
-            max_tokens=10
+            max_tokens=50  # Increased to avoid truncation
         )
         score = response.choices[0].message.content.strip()
         try:
             score_float = float(score)
             if not (1 <= score_float <= 5):
                 raise ValueError("Score out of range")
-            # Ensure two decimal places
             score = f"{score_float:.2f}"
         except ValueError as e:
             logger.error(f"Invalid score format received: {score}, error: {str(e)}")
             raise ValueError(f"Invalid score format received: {score}")
         return score
     except Exception as e:
-        logger.error(f"Error in box score simulation: {str(e)}")  # Log the error
+        logger.error(f"Error in box score simulation: {str(e)}")
         raise Exception(f"Error in box score simulation: {str(e)}")
 
 @app.route('/predict_box_score', methods=['POST'])
@@ -76,7 +60,7 @@ def box_score():
         score = predict_box_score(historical_data, future_box_info)
         return jsonify({'predicted_box_score': score})
     except Exception as e:
-        logger.error(f"Error in /predict_box_score endpoint: {str(e)}")  # Log the error
+        logger.error(f"Error in /predict_box_score endpoint: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
