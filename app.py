@@ -31,7 +31,7 @@ def predict_box_score(historical_data, future_box_info):
                 {"role": "user", "content": prompt}  # Only user role, system content merged into prompt
             ],
             temperature=0.5,
-            max_tokens=50  # Increased to avoid truncation
+            max_completion_tokens=50  # Changed from max_tokens to max_completion_tokens
         )
         score = response.choices[0].message.content.strip()
         try:
