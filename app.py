@@ -35,7 +35,7 @@ def predict_box_score(historical_data, future_box_info):
 
         Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return a satisfaction score on a 1–5 scale (matching the historical scores), with exactly two decimal places (e.g., 4.23). Return only the numerical score (e.g., 4.23)."""
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="o1-preview",
             messages=[
                 {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
                 {"role": "user", "content": prompt}
