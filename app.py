@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-import logging  # Added for error logging
+import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,17 +20,33 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def predict_box_score(historical_data, future_box_info):
     """Simulate a 1–5 satisfaction score (with two decimal places) for a future box using historical data."""
     try:
-        prompt = f"""You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends. Using this data:
-        Historical Data: {historical_data}
+        prompt = f"""You are a Goodiebox satisfaction expert simulating a member satisfaction score for a future subscription box. Use this data context:
+
+        **Data Explanation**:
+        - Historical Data: Past boxes with details like:
+          - Box SKU: Unique box identifier (e.g., DK-2504-CLA-2L).
+          - Products: Number of items, listed as Product SKUs (e.g., SKU123).
+          - Total Retail Value: Sum of product retail prices in €.
+          - Unique Categories: Number of distinct product categories (e.g., skincare, makeup).
+          - Full-size/Premium: Counts of full-size items and those >€20.
+          - Total Weight: Sum of product weights in grams.
+          - Avg Brand/Category Ratings: Average ratings (out of 5) for brands and categories.
+          - Historical Score: Past average box rating (out of 5, with two decimal places, e.g., 4.23).
+        - Future Box Info: Details of a new box (same format, no historical score yet).
+
+        **Inputs**:
+        Historical Data (past boxes): {historical_data}
         Future Box Info: {future_box_info}
-        Predict a satisfaction score (1–5) for the future box based on trends in past ratings, product variety, and value. Return the score as a number with two decimal places (e.g., 4.23), nothing else."""
-        
+
+        Simulate the score by analyzing trends in past member reactions, product variety, retail value, brand reputation, category ratings, and surprise value. Return a satisfaction score on a 1–5 scale (matching the historical scores), with exactly two decimal places (e.g., 4.23). Return only the numerical score (e.g., 4.23)."""
         response = client.chat.completions.create(
-            model="o1-preview",
+            model="gpt-4o",
             messages=[
+                {"role": "system", "content": "You’re an expert in predicting Goodiebox satisfaction, skilled at simulating outcomes from historical trends."},
                 {"role": "user", "content": prompt}
             ],
-            max_completion_tokens=50
+            temperature=0.5,
+            max_tokens=50  # Increased from 10 to 50 for safety
         )
         score = response.choices[0].message.content.strip()
         logger.info(f"Raw model response: '{score}'")
