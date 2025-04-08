@@ -33,14 +33,18 @@ def predict_box_score(historical_data, future_box_info):
             max_completion_tokens=50
         )
         score = response.choices[0].message.content.strip()
+        logger.info(f"Raw model response: '{score}'")
+        if not score:
+            logger.error("Model returned an empty response")
+            raise ValueError("Model returned an empty response")
         try:
             score_float = float(score)
             if not (1 <= score_float <= 5):
                 raise ValueError("Score out of range")
             score = f"{score_float:.2f}"
         except ValueError as e:
-            logger.error(f"Invalid score format received: {score}, error: {str(e)}")
-            raise ValueError(f"Invalid score format received: {score}")
+            logger.error(f"Invalid score format received: '{score}', error: {str(e)}")
+            raise ValueError(f"Invalid score format received: '{score}'")
         return score
     except Exception as e:
         logger.error(f"Error in box score simulation: {str(e)}")
