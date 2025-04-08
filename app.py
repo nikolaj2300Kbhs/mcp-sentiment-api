@@ -2,6 +2,11 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import logging  # Added for error logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -50,10 +55,12 @@ def predict_box_score(historical_data, future_box_info):
                 raise ValueError("Score out of range")
             # Ensure two decimal places
             score = f"{score_float:.2f}"
-        except ValueError:
-            raise ValueError("Invalid score format received")
+        except ValueError as e:
+            logger.error(f"Invalid score format received: {score}, error: {str(e)}")
+            raise ValueError(f"Invalid score format received: {score}")
         return score
     except Exception as e:
+        logger.error(f"Error in box score simulation: {str(e)}")  # Log the error
         raise Exception(f"Error in box score simulation: {str(e)}")
 
 @app.route('/predict_box_score', methods=['POST'])
@@ -62,12 +69,14 @@ def box_score():
     try:
         data = request.get_json()
         if not data or 'future_box_info' not in data:
+            logger.warning("Missing future box info in request")
             return jsonify({'error': 'Missing future box info'}), 400
         historical_data = data.get('historical_data', 'No historical data provided')
         future_box_info = data['future_box_info']
         score = predict_box_score(historical_data, future_box_info)
         return jsonify({'predicted_box_score': score})
     except Exception as e:
+        logger.error(f"Error in /predict_box_score endpoint: {str(e)}")  # Log the error
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
