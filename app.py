@@ -28,10 +28,9 @@ def predict_box_score(historical_data, future_box_info):
         response = client.chat.completions.create(
             model="o1-preview",
             messages=[
-                {"role": "user", "content": prompt}  # Only user role, system content merged into prompt
+                {"role": "user", "content": prompt}
             ],
-            temperature=0.5,
-            max_completion_tokens=50  # Changed from max_tokens to max_completion_tokens
+            max_completion_tokens=50
         )
         score = response.choices[0].message.content.strip()
         try:
